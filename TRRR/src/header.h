@@ -35,6 +35,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 String databasePath;
 // Database child nodes
 String weightPath = "/weight";
+String datePath = "/date";
 String timePath = "/time";
 String statusPath = "/status";
 String percentPath = "/fullness";

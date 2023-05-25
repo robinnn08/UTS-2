@@ -75,6 +75,9 @@ void send24h(){
     timestamp = timeClient.getFormattedDate();
     timestamp.replace("T", " ");
     timestamp.replace("Z", "");
+    char timeStr[9];
+    char dateStr[11];
+    sscanf(timestamp.c_str(), "%10s %8s", dateStr, timeStr);
     Serial.print ("time: ");
     Serial.println (timestamp);
 
@@ -87,7 +90,8 @@ void send24h(){
     }
     json.set(weightPath.c_str(), String(weight));
     json.set(percentPath.c_str(), String(percentage));
-    json.set(timePath, String(timestamp));
+    json.set(datePath, String(dateStr));
+    json.set(timePath, String(timeStr));
  
     Serial.printf("Set json... %s\n", Firebase.RTDB.setJSON(&firebaseData, parentPath.c_str(), &json) ? "ok" : firebaseData.errorReason().c_str());
   }
