@@ -18,7 +18,7 @@ void ultraSonic(){
   percentage = (HEIGHT - distanceCm) * 100 / HEIGHT;
 }
 
-void displayWeight(int reading)
+void displayWeight()
 {
   display.clearDisplay();
   display.setTextSize(1);
@@ -29,7 +29,7 @@ void displayWeight(int reading)
   display.display();
   display.setCursor(0, 30);
   display.setTextSize(2);
-  display.print(reading);
+  display.print(weight);
   display.print(" ");
   display.print("grams");
   display.display();
@@ -46,10 +46,7 @@ void serialReading(){
     Serial.println(distanceCm);
     Serial.print("Percentage: ");
     Serial.println(percentage);
-    if (weight != lastReading)
-    {
-      displayWeight(weight);
-    }
+    
     lastReading = weight;
   }
   else
@@ -61,42 +58,57 @@ void serialReading(){
   scale.power_up();
 }
 
-void send24h(){
+void send24h() {
   String timestamp;
   databasePath = "/LogTest";
+  String countPath = "/Counter/count";
   
-  if (Firebase.ready() && (millis() - sendDataPrevMillis > timerDelay || sendDataPrevMillis == 0)){
+  if (Firebase.ready() && (millis() - sendDataPrevMillis > timerDelay || sendDataPrevMillis == 0)) {
     sendDataPrevMillis = millis();
 
-    while(!timeClient.update()) {
-    timeClient.forceUpdate();
+    while (!timeClient.update()) {
+      timeClient.forceUpdate();
     }
-    //Get current timestamp
+    // Get current timestamp
     timestamp = timeClient.getFormattedDate();
     timestamp.replace("T", " ");
     timestamp.replace("Z", "");
     char timeStr[9];
     char dateStr[11];
     sscanf(timestamp.c_str(), "%10s %8s", dateStr, timeStr);
-    Serial.print ("time: ");
-    Serial.println (timestamp);
+    Serial.print("time: ");
+    Serial.println(timestamp);
 
-    parentPath = databasePath + "/" + String(timestamp);
+    // Read the last count from Firebase
+    Firebase.getInt(firebaseData, countPath);
+    int lastCount = firebaseData.intData();
+
+    // Increment the count
+    int currentCount = lastCount + 1;
+    int parentNode = currentCount -1;
     
-    if (percentage >= 100){
+    Serial.print("Current counter value: ");
+    Serial.println(currentCount);
+
+    parentPath = databasePath + "/" + String(parentNode);
+
+    if (percentage >= 100) {
       json.set(statusPath.c_str(), "FULL");
     } else {
       json.set(statusPath.c_str(), "AVAILABLE");
     }
-    json.set(weightPath.c_str(), String(weight));
-    json.set(percentPath.c_str(), String(percentage));
+    json.set(weightPath, weight);
+    json.set(percentPath, percentage);
     json.set(datePath, String(dateStr));
     json.set(timePath, String(timeStr));
- 
+
     Serial.printf("Set json... %s\n", Firebase.RTDB.setJSON(&firebaseData, parentPath.c_str(), &json) ? "ok" : firebaseData.errorReason().c_str());
+
+    // Update the count on the separate count path
+    Firebase.setInt(firebaseData, countPath, currentCount);
   }
-  
 }
+
 
 void realtimeSend(){
   rts.set("/capacity", percentage);
@@ -110,6 +122,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(TRIGGER, OUTPUT);
   pinMode(ECHO, INPUT);
+  
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED)
@@ -161,4 +174,5 @@ void loop() {
   send24h();
   realtimeSend();
   serialReading();
+  displayWeight();
 }
