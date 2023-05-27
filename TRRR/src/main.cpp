@@ -88,7 +88,7 @@ void send24h() {
     int parentNode = currentCount -1;
     
     Serial.print("Current counter value: ");
-    Serial.println(currentCount);
+    Serial.println(parentNode);
 
     parentPath = databasePath + "/" + String(parentNode);
 
